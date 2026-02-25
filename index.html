@@ -1,0 +1,464 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Lost & Found System</title>
+  <link rel="stylesheet" href="style.css">
+</head>
+<body>
+
+  <!-- Welcome/Intro Page -->
+  <div id="welcomePage" class="page-container">
+    <div class="welcome-container">
+      <div class="welcome-content">
+        <div class="logo-circle-large">
+          <span class="logo-icon">🔍</span>
+        </div>
+        <h1 class="welcome-title">Lost & Found</h1>
+        <p class="welcome-subtitle">Lost it? Found it. Fixed it.</p>
+        <p class="welcome-description">
+          A smart system to help you report, search, and recover lost items.
+          Join our community and reunite with your belongings.
+        </p>
+        
+        <button onclick="goToAuth()" class="btn-get-started">
+          Get Started
+          <span class="arrow-icon">→</span>
+        </button>
+        
+        <div class="features-grid-welcome">
+          <div class="feature-item-welcome">
+            <span class="feature-icon">📢</span>
+            <h4>Report Lost Items</h4>
+            <p>Quickly report missing items with details and photos</p>
+          </div>
+          <div class="feature-item-welcome">
+            <span class="feature-icon">✨</span>
+            <h4>Report Found Items</h4>
+            <p>Help others by reporting items you've found</p>
+          </div>
+          <div class="feature-item-welcome">
+            <span class="feature-icon">🎯</span>
+            <h4>Smart Matching</h4>
+            <p>AI-powered system matches lost and found items</p>
+          </div>
+          <div class="feature-item-welcome">
+            <span class="feature-icon">🤝</span>
+            <h4>Easy Recovery</h4>
+            <p>Connect with finders and recover your items</p>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Auth Page (Login/Register) -->
+  <div id="authPage" class="page-container" style="display: none;">
+    <div class="auth-page-container">
+      <button class="back-to-welcome" onclick="backToWelcome()">← Back</button>
+      
+      <div class="auth-card-center">
+        <div class="auth-tabs">
+          <button class="auth-tab active" onclick="showAuthTab('login')" id="loginTab">
+            Sign In
+          </button>
+          <button class="auth-tab" onclick="showAuthTab('register')" id="registerTab">
+            Sign Up
+          </button>
+        </div>
+        
+        <!-- Login Form -->
+        <div id="loginForm" class="auth-form active">
+          <div class="form-header">
+            <div class="form-icon">🔑</div>
+            <h2>Sign In</h2>
+            <p>Enter your credentials to continue</p>
+          </div>
+          
+          <div class="form-body">
+            <div class="input-group">
+              <label>Email Address</label>
+              <input type="email" id="loginEmail" placeholder="Enter your email">
+            </div>
+            
+            <div class="input-group">
+              <label>Password</label>
+              <input type="password" id="loginPassword" placeholder="Enter your password">
+            </div>
+            
+            <div class="form-options">
+              <label class="checkbox-label">
+                <input type="checkbox" id="rememberMe">
+                <span>Remember me</span>
+              </label>
+              <a href="#" class="forgot-link">Forgot Password?</a>
+            </div>
+            
+            <button onclick="loginUser()" class="btn-primary">Sign In</button>
+            
+            <div class="form-divider">
+              <span>or</span>
+            </div>
+            
+            <p class="form-footer">
+              Don't have an account? 
+              <a href="#" onclick="showAuthTab('register')">Sign up now</a>
+            </p>
+          </div>
+        </div>
+        
+        <!-- Register Form -->
+        <div id="registerForm" class="auth-form">
+          <div class="form-header">
+            <div class="form-icon">📝</div>
+            <h2>Create Account</h2>
+            <p>Join our community today</p>
+          </div>
+          
+          <div class="form-body">
+            <div class="input-group">
+              <label>Full Name</label>
+              <input type="text" id="registerName" placeholder="Enter your full name">
+            </div>
+            
+            <div class="input-group">
+              <label>Email Address</label>
+              <input type="email" id="registerEmail" placeholder="Enter your email">
+            </div>
+            
+            <div class="input-group">
+              <label>Password</label>
+              <input type="password" id="registerPassword" placeholder="Create a password">
+            </div>
+            
+            <div class="input-group">
+              <label>Confirm Password</label>
+              <input type="password" id="registerConfirmPassword" placeholder="Confirm your password">
+            </div>
+            
+            <button onclick="registerUser()" class="btn-primary">Create Account</button>
+            
+            <div class="form-divider">
+              <span>or</span>
+            </div>
+            
+            <p class="form-footer">
+              Already have an account? 
+              <a href="#" onclick="showAuthTab('login')">Sign in here</a>
+            </p>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Main App -->
+  <div id="mainApp" style="display: none;">
+    
+
+    <!-- Main Content -->
+    <main class="main-content">
+      
+      <!-- Top Bar -->
+      <header class="top-bar">
+        <div class="top-bar-content">
+          <h1 class="page-title" id="pageTitle">LOST AND FOUND</h1>
+          <p class="page-subtitle" id="pageSubtitle">Lost it, Found it, Fixed it!</p>
+        </div>
+      </header>
+
+      <!-- HOME SECTION -->
+      <div id="homeSection" class="section active">
+
+        <!-- Search and Filter -->
+        <div class="search-section">
+          <div class="search-bar">
+            <span class="search-icon">🔍</span>
+            <input type="text" id="searchBox" placeholder="Search items by name, description, location..." onkeyup="filterReports()">
+          </div>
+          <select id="filterType" onchange="filterReports()" class="filter-select">
+            <option value="all">All Types</option>
+            <option value="lost">Lost Items</option>
+            <option value="found">Found Items</option>
+            <option value="matched">Returned Items</option>
+          </select>
+          <select id="filterCategory" onchange="filterReports()" class="filter-select">
+            <option value="all">All Categories</option>
+            <option value="ID">ID Cards</option>
+            <option value="Phone">Phones</option>
+            <option value="Bag">Bags</option>
+            <option value="Keys">Keys</option>
+            <option value="Wallet">Wallets</option>
+            <option value="Laptop">Laptops</option>
+            <option value="Book">Books</option>
+            <option value="Clothing">Clothing</option>
+            <option value="Jewelry">Jewelry</option>
+            <option value="Unknown">Other</option>
+          </select>
+        </div>
+
+        <!-- Recent Searches -->
+        <div id="recentSearchesSection" class="recent-searches-section" style="display: none;">
+          <h3>Recent Searches</h3>
+          <div id="recentSearchesList" class="recent-searches-list"></div>
+        </div>
+
+        <!-- All Reports -->
+        <div class="reports-section">
+          <h3>All Reports</h3>
+          <div id="reportList" class="items-grid"></div>
+          <div id="noReports" class="empty-state" style="display: none;">
+            <div class="empty-icon">📭</div>
+            <h3>No Reports Yet</h3>
+            <p>Be the first to report an item!</p>
+          </div>
+        </div>
+      </div>
+
+      <!-- LOST ITEMS SECTION -->
+      <div id="lostSection" class="section">
+        <div class="section-header">
+          <h2>📢 Lost Items</h2>
+          <p>Items that people are looking for</p>
+        </div>
+        <div id="lostItemsList" class="items-grid"></div>
+        <div id="noLostItems" class="empty-state" style="display: none;">
+          <div class="empty-icon">📢</div>
+          <h3>No Lost Items</h3>
+          <p>No items have been reported as lost yet.</p>
+        </div>
+      </div>
+      
+      <!-- FOUND ITEMS SECTION -->
+      <div id="foundSection" class="section">
+        <div class="section-header">
+          <h2>✨ Found Items</h2>
+          <p>Items that have been found and waiting for owners</p>
+        </div>
+        <div id="foundItemsList" class="items-grid"></div>
+        <div id="noFoundItems" class="empty-state" style="display: none;">
+          <div class="empty-icon">✨</div>
+          <h3>No Found Items</h3>
+          <p>No items have been reported as found yet.</p>
+        </div>
+      </div>
+
+      <!-- MATCHES SECTION -->
+      <div id="matchesSection" class="section">
+        <div class="section-header">
+          <h2>🎯 Potential Matches</h2>
+          <p>These items might match based on AI analysis</p>
+        </div>
+        <div id="matchesDisplay" class="matches-container"></div>
+        <div id="noMatches" class="empty-state" style="display: none;">
+          <div class="empty-icon">🎯</div>
+          <h3>No Matches Found</h3>
+          <p>No potential matches at this time.</p>
+        </div>
+      </div>
+
+      <!-- RETURNED ITEMS SECTION -->
+      <div id="returnedSection" class="section">
+        <div class="section-header">
+          <h2>✅ Returned Items</h2>
+          <p>Items that have been successfully returned</p>
+        </div>
+        <div id="returnedItemsList" class="items-grid"></div>
+        <div id="noReturnedItems" class="empty-state" style="display: none;">
+          <div class="empty-icon">✅</div>
+          <h3>No Returned Items</h3>
+          <p>No items have been returned yet.</p>
+        </div>
+      </div>
+
+      <!-- PROFILE SECTION -->
+      <div id="profileSection" class="section">
+        <div class="profile-container">
+          <div class="profile-header-card">
+            <div class="profile-cover"></div>
+            <div class="profile-info">
+              <div class="profile-avatar-large" id="profileInitial">
+                <span id="profileInitialText">S</span>
+                <input type="file" id="profilePictureInput" accept="image/*" style="display: none;" onchange="uploadProfilePicture()">
+              </div>
+              <button class="change-photo-btn" onclick="document.getElementById('profilePictureInput').click()">
+                📷 Change Photo
+              </button>
+              <div class="profile-details">
+                <h2 id="profileName">User Name</h2>
+                <p id="profileEmail">user@email.com</p>
+                <span class="profile-badge" id="profileRole">Member</span>
+              </div>
+            </div>
+          </div>
+
+          <div class="profile-stats-grid">
+            <div class="profile-stat-card">
+              <div class="profile-stat-icon">📢</div>
+              <h3 id="myLostCount">0</h3>
+              <p>My Lost Reports</p>
+            </div>
+            <div class="profile-stat-card">
+              <div class="profile-stat-icon">✨</div>
+              <h3 id="myFoundCount">0</h3>
+              <p>My Found Reports</p>
+            </div>
+            <div class="profile-stat-card">
+              <div class="profile-stat-icon">✅</div>
+              <h3 id="myReturnedCount">0</h3>
+              <p>Items Returned</p>
+            </div>
+          </div>
+
+          <!-- Logout Button in Profile -->
+          <div class="profile-actions">
+            <button onclick="logout()" class="btn-logout-profile">
+              <span>🚪</span> Logout
+            </button>
+          </div>
+
+          <div class="my-reports-section">
+            <h3>My Reports</h3>
+            <div id="myReportsList" class="items-grid"></div>
+            <div id="noMyReports" class="empty-state" style="display: none;">
+              <div class="empty-icon">📝</div>
+              <h3>No Reports Yet</h3>
+              <p>You haven't reported any items yet.</p>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- ADMIN SECTION -->
+      <div id="adminSection" class="section admin-only" style="display: none;">
+        <div class="section-header">
+          <h2>🔐 Admin Panel</h2>
+          <p>Manage reports and verify matches</p>
+        </div>
+        
+        <div class="admin-actions-grid">
+          <button onclick="showMatches()" class="admin-action-card">
+            <span class="admin-action-icon">🎯</span>
+            <h4>Check Matches</h4>
+            <p>View potential matches</p>
+          </button>
+          <button onclick="viewAllReports()" class="admin-action-card">
+            <span class="admin-action-icon">📋</span>
+            <h4>All Reports</h4>
+            <p>View all submissions</p>
+          </button>
+          <button onclick="showDeleteSection()" class="admin-action-card danger">
+            <span class="admin-action-icon">🗑️</span>
+            <h4>Manage Reports</h4>
+            <p>Delete reports</p>
+          </button>
+        </div>
+
+        <div id="matchResults" class="matches-container"></div>
+        
+        <div id="deleteSection" style="display: none;">
+          <h3>Manage Reports</h3>
+          <div id="deleteReportsList" class="items-grid"></div>
+        </div>
+      </div>
+
+    </main>
+
+    <!-- Floating Add Button -->
+    <button class="floating-add-btn" onclick="showReportTypeModal()">
+      <span class="plus-icon">+</span>
+    </button>
+
+    <!-- Bottom Navigation Footer -->
+    <footer class="bottom-nav">
+      <a href="#" class="bottom-nav-item active" onclick="showSection('home')" data-section="home">
+        <span class="bottom-nav-icon">🏠</span>
+        <span class="bottom-nav-label">Home</span>
+      </a>
+      <a href="#" class="bottom-nav-item" onclick="showSection('matches')" data-section="matches">
+        <span class="bottom-nav-icon">🎯</span>
+        <span class="bottom-nav-label">Matches</span>
+      </a>
+      <div class="bottom-nav-item-placeholder"></div>
+      <a href="#" class="bottom-nav-item" onclick="showSection('returned')" data-section="returned">
+        <span class="bottom-nav-icon">✅</span>
+        <span class="bottom-nav-label">Returned</span>
+      </a>
+      <a href="#" class="bottom-nav-item" onclick="showSection('profile')" data-section="profile">
+        <span class="bottom-nav-icon">👤</span>
+        <span class="bottom-nav-label">Profile</span>
+      </a>
+    </footer>
+
+    <!-- Report Type Selection Modal -->
+    <div id="reportTypeModal" class="modal-overlay" style="display: none;">
+      <div class="modal-content-small">
+        <h3>What would you like to report?</h3>
+        <div class="report-type-buttons">
+          <button onclick="selectTypeFromModal('lost')" class="report-type-btn lost-type">
+            <span class="report-type-icon">📢</span>
+            <span>Report Lost Item</span>
+          </button>
+          <button onclick="selectTypeFromModal('found')" class="report-type-btn found-type">
+            <span class="report-type-icon">✨</span>
+            <span>Report Found Item</span>
+          </button>
+        </div>
+        <button onclick="closeReportTypeModal()" class="btn-cancel">Cancel</button>
+      </div>
+    </div>
+
+    <!-- Report Form Modal -->
+    <div id="reportForm" class="modal-overlay" style="display: none;">
+      <div class="modal-content">
+        <div class="modal-header">
+          <h2 id="formTitle">Report Item</h2>
+          <button class="modal-close" onclick="closeForm()">✕</button>
+        </div>
+        
+        <div class="modal-body">
+          <div class="input-group">
+            <label>Item Name *</label>
+            <input type="text" id="itemName" placeholder="e.g., Blue Backpack">
+          </div>
+          
+          <div class="input-group">
+            <label>Description *</label>
+            <textarea id="itemDesc" placeholder="Provide details like color, brand, distinguishing features..."></textarea>
+            <span class="char-counter" id="charCount">0/500</span>
+          </div>
+          
+          <div class="input-group">
+            <label>Location *</label>
+            <input type="text" id="itemLocation" placeholder="Where was it lost/found?">
+          </div>
+          
+          <div class="input-group">
+            <label>Upload Image *</label>
+            <div class="file-upload-area">
+              <input type="file" id="itemImage" accept="image/*" onchange="previewImage()">
+              <div class="file-upload-placeholder">
+                <span class="upload-icon">📸</span>
+                <p>Click to upload or drag and drop</p>
+                <span class="upload-hint">PNG, JPG up to 5MB</span>
+              </div>
+              <div id="imagePreview" class="image-preview-container"></div>
+            </div>
+          </div>
+        </div>
+        
+        <div class="modal-footer">
+          <button onclick="closeForm()" class="btn-secondary">Cancel</button>
+          <button onclick="submitReport()" class="btn-primary">Submit Report</button>
+        </div>
+      </div>
+    </div>
+
+    <!-- Notification Toast -->
+    <div id="notification" class="toast-notification"></div>
+  </div>
+
+  <script src="main.js"></script>
+</body>
+</html>
