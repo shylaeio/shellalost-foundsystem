@@ -1,0 +1,1049 @@
+// Global variables
+let currentUser = null;
+let reportType = "";
+let reports = [];
+let users = [];
+let recentSearches = [];
+let profilePictures = {};
+
+// Initialize app
+window.onload = function() {
+  loadFromStorage();
+  checkRememberMe();
+};
+
+// Load data from storage
+function loadFromStorage() {
+  if (typeof sessionStorage !== 'undefined') {
+    try {
+      const savedReports = sessionStorage.getItem('reports');
+      const savedUsers = sessionStorage.getItem('users');
+      const savedSearches = sessionStorage.getItem('recentSearches');
+      const savedProfilePics = sessionStorage.getItem('profilePictures');
+      
+      if (savedReports) reports = JSON.parse(savedReports);
+      if (savedUsers) users = JSON.parse(savedUsers);
+      if (savedSearches) recentSearches = JSON.parse(savedSearches);
+      if (savedProfilePics) profilePictures = JSON.parse(savedProfilePics);
+    } catch (e) {
+      console.log('Storage not available');
+    }
+  }
+}
+
+// Save data to storage
+function saveToStorage() {
+  if (typeof sessionStorage !== 'undefined') {
+    try {
+      sessionStorage.setItem('reports', JSON.stringify(reports));
+      sessionStorage.setItem('users', JSON.stringify(users));
+      sessionStorage.setItem('recentSearches', JSON.stringify(recentSearches));
+      sessionStorage.setItem('profilePictures', JSON.stringify(profilePictures));
+    } catch (e) {
+      console.log('Storage not available');
+    }
+  }
+}
+
+// Check remember me
+function checkRememberMe() {
+  if (typeof sessionStorage !== 'undefined') {
+    try {
+      const rememberedUser = sessionStorage.getItem('rememberedUser');
+      if (rememberedUser) {
+        const user = JSON.parse(rememberedUser);
+        document.getElementById('loginEmail').value = user.email;
+        document.getElementById('rememberMe').checked = true;
+      }
+    } catch (e) {
+      console.log('Storage not available');
+    }
+  }
+}
+
+// Go to auth page
+function goToAuth() {
+  document.getElementById('welcomePage').style.display = 'none';
+  document.getElementById('authPage').style.display = 'flex';
+}
+
+// Back to welcome page
+function backToWelcome() {
+  document.getElementById('authPage').style.display = 'none';
+  document.getElementById('welcomePage').style.display = 'flex';
+}
+
+// Show auth tab (login/register)
+function showAuthTab(tab) {
+  const loginTab = document.getElementById('loginTab');
+  const registerTab = document.getElementById('registerTab');
+  const loginForm = document.getElementById('loginForm');
+  const registerForm = document.getElementById('registerForm');
+  
+  if (tab === 'login') {
+    loginTab.classList.add('active');
+    registerTab.classList.remove('active');
+    loginForm.classList.add('active');
+    registerForm.classList.remove('active');
+  } else {
+    registerTab.classList.add('active');
+    loginTab.classList.remove('active');
+    registerForm.classList.add('active');
+    loginForm.classList.remove('active');
+  }
+}
+
+// Register user
+function registerUser() {
+  const name = document.getElementById('registerName').value.trim();
+  const email = document.getElementById('registerEmail').value.trim();
+  const password = document.getElementById('registerPassword').value;
+  const confirmPassword = document.getElementById('registerConfirmPassword').value;
+  
+  if (!name) {
+    showNotification('Please enter your full name.', 'error');
+    return;
+  }
+  
+  if (!email) {
+    showNotification('Please enter your email.', 'error');
+    return;
+  }
+  
+  if (!validateEmail(email)) {
+    showNotification('Please enter a valid email address.', 'error');
+    return;
+  }
+  
+  if (!password) {
+    showNotification('Please enter a password.', 'error');
+    return;
+  }
+  
+  if (password.length < 6) {
+    showNotification('Password must be at least 6 characters.', 'error');
+    return;
+  }
+  
+  if (password !== confirmPassword) {
+    showNotification('Passwords do not match.', 'error');
+    return;
+  }
+  
+  if (users.find(u => u.email === email)) {
+    showNotification('An account with this email already exists.', 'error');
+    return;
+  }
+  
+  const newUser = {
+    id: Date.now(),
+    name: name,
+    email: email,
+    password: password,
+    role: 'member',
+    createdAt: new Date().toLocaleString()
+  };
+  
+  users.push(newUser);
+  saveToStorage();
+  
+  showNotification('Account created successfully! Please login.', 'success');
+  
+  document.getElementById('registerName').value = '';
+  document.getElementById('registerEmail').value = '';
+  document.getElementById('registerPassword').value = '';
+  document.getElementById('registerConfirmPassword').value = '';
+  
+  document.getElementById('loginEmail').value = email;
+  showAuthTab('login');
+}
+
+// Login user
+function loginUser() {
+  const email = document.getElementById('loginEmail').value.trim();
+  const password = document.getElementById('loginPassword').value;
+  const rememberMe = document.getElementById('rememberMe').checked;
+  
+  if (!email) {
+    showNotification('Please enter your email.', 'error');
+    return;
+  }
+  
+  if (!password) {
+    showNotification('Please enter your password.', 'error');
+    return;
+  }
+  
+  // Admin login
+  if (email === 'admin@lostfound.com' && password === 'admin123') {
+    currentUser = {
+      id: 0,
+      name: 'Administrator',
+      email: email,
+      role: 'admin'
+    };
+    
+    if (rememberMe) {
+      if (typeof sessionStorage !== 'undefined') {
+        try {
+          sessionStorage.setItem('rememberedUser', JSON.stringify({ email }));
+        } catch (e) {
+          console.log('Storage not available');
+        }
+      }
+    }
+    
+    loginSuccess();
+    return;
+  }
+  
+  const user = users.find(u => u.email === email && u.password === password);
+  
+  if (!user) {
+    showNotification('Invalid email or password.', 'error');
+    return;
+  }
+  
+  currentUser = user;
+  
+  if (rememberMe) {
+    if (typeof sessionStorage !== 'undefined') {
+      try {
+        sessionStorage.setItem('rememberedUser', JSON.stringify({ email }));
+      } catch (e) {
+        console.log('Storage not available');
+      }
+    }
+  }
+  
+  loginSuccess();
+}
+
+// Login success
+function loginSuccess() {
+  document.getElementById('authPage').style.display = 'none';
+  document.getElementById('mainApp').style.display = 'flex';
+  
+  // Update user info in UI
+  const initial = currentUser.name.charAt(0).toUpperCase();
+  document.getElementById('sidebarUserName').innerText = currentUser.name;
+  document.getElementById('sidebarUserRole').innerText = currentUser.role === 'admin' ? 'Administrator' : 'Member';
+  
+  // Set avatars
+  updateAllAvatars();
+  
+  // Show admin sections if admin
+  if (currentUser.role === 'admin') {
+    document.querySelectorAll('.admin-only').forEach(el => {
+      if (el.tagName === 'A') {
+        el.style.display = 'flex';
+      } else {
+        el.style.display = 'block';
+      }
+    });
+  }
+  
+  updateProfile();
+  showSection('home');
+  displayReports();
+  displayLostItems();
+  displayFoundItems();
+  displayMatches();
+  displayReturnedItems();
+  displayMyReports();
+  updateStatistics();
+  displayRecentSearches();
+  
+  showNotification(`Welcome back, ${currentUser.name}!`, 'success');
+}
+
+// Update all avatars with profile picture
+function updateAllAvatars() {
+  const initial = currentUser.name.charAt(0).toUpperCase();
+  const profilePic = profilePictures[currentUser.id];
+  
+  // Sidebar avatar
+  const sidebarAvatar = document.getElementById('sidebarAvatar');
+  if (profilePic) {
+    sidebarAvatar.innerHTML = `<img src="${profilePic}" alt="Profile">`;
+  } else {
+    sidebarAvatar.innerText = initial;
+  }
+  
+  // Profile page avatar
+  const profileInitial = document.getElementById('profileInitial');
+  if (profilePic) {
+    profileInitial.innerHTML = `<img src="${profilePic}" alt="Profile"><span id="profileInitialText" style="display: none;">${initial}</span>`;
+  } else {
+    profileInitial.innerHTML = `<span id="profileInitialText">${initial}</span>`;
+  }
+}
+
+// Upload profile picture
+function uploadProfilePicture() {
+  const file = document.getElementById('profilePictureInput').files[0];
+  
+  if (!file) return;
+  
+  if (file.size > 5 * 1024 * 1024) {
+    showNotification('Image size must be less than 5MB.', 'error');
+    return;
+  }
+  
+  const reader = new FileReader();
+  reader.onload = function(e) {
+    profilePictures[currentUser.id] = e.target.result;
+    saveToStorage();
+    updateAllAvatars();
+    showNotification('Profile picture updated successfully!', 'success');
+  };
+  reader.readAsDataURL(file);
+}
+
+// Logout
+function logout() {
+  if (confirm('Are you sure you want to logout?')) {
+    currentUser = null;
+    document.getElementById('mainApp').style.display = 'none';
+    document.getElementById('welcomePage').style.display = 'flex';
+    
+    document.getElementById('loginEmail').value = '';
+    document.getElementById('loginPassword').value = '';
+    document.getElementById('rememberMe').checked = false;
+    
+    document.querySelectorAll('.admin-only').forEach(el => {
+      el.style.display = 'none';
+    });
+    
+    showSection('home');
+    showNotification('Logged out successfully!', 'info');
+  }
+}
+
+// Email validation
+function validateEmail(email) {
+  const re = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+  return re.test(email);
+}
+
+// Update page title based on section
+function updatePageTitle(sectionName) {
+  const titles = {
+    home: { title: 'Dashboard', subtitle: 'Manage your items' },
+    lost: { title: 'Lost Items', subtitle: 'Items people are looking for' },
+    found: { title: 'Found Items', subtitle: 'Items waiting for their owners' },
+    matches: { title: 'Potential Matches', subtitle: 'AI-powered matching results' },
+    returned: { title: 'Returned Items', subtitle: 'Successfully reunited items' },
+    profile: { title: 'My Profile', subtitle: 'Manage your account' },
+    admin: { title: 'Admin Panel', subtitle: 'Manage the system' }
+  };
+  
+  const info = titles[sectionName] || titles.home;
+  document.getElementById('pageTitle').innerText = info.title;
+  document.getElementById('pageSubtitle').innerText = info.subtitle;
+}
+
+// Show section
+function showSection(sectionName) {
+  // Hide all sections
+  document.querySelectorAll('.section').forEach(section => {
+    section.classList.remove('active');
+  });
+  
+  // Remove active from sidebar nav items
+  document.querySelectorAll('.sidebar .nav-item').forEach(btn => {
+    btn.classList.remove('active');
+  });
+  
+  // Remove active from bottom nav items
+  document.querySelectorAll('.bottom-nav-item').forEach(btn => {
+    btn.classList.remove('active');
+  });
+  
+  // Show selected section
+  const section = document.getElementById(sectionName + 'Section');
+  if (section) {
+    section.classList.add('active');
+  }
+  
+  // Add active to sidebar nav button
+  const sidebarNavBtn = document.querySelector(`.sidebar .nav-item[data-section="${sectionName}"]`);
+  if (sidebarNavBtn) {
+    sidebarNavBtn.classList.add('active');
+  }
+  
+  // Add active to bottom nav button
+  const bottomNavBtn = document.querySelector(`.bottom-nav-item[data-section="${sectionName}"]`);
+  if (bottomNavBtn) {
+    bottomNavBtn.classList.add('active');
+  }
+  
+  updatePageTitle(sectionName);
+  
+  // Refresh data based on section
+  switch(sectionName) {
+    case 'home':
+      displayReports();
+      break;
+    case 'lost':
+      displayLostItems();
+      break;
+    case 'found':
+      displayFoundItems();
+      break;
+    case 'matches':
+      displayMatches();
+      break;
+    case 'returned':
+      displayReturnedItems();
+      break;
+    case 'profile':
+      displayMyReports();
+      updateProfile();
+      break;
+  }
+}
+
+// Update profile
+function updateProfile() {
+  if (!currentUser) return;
+  
+  const initial = currentUser.name.charAt(0).toUpperCase();
+  document.getElementById('profileName').innerText = currentUser.name;
+  document.getElementById('profileEmail').innerText = currentUser.email;
+  document.getElementById('profileRole').innerText = currentUser.role === 'admin' ? 'Administrator' : 'Member';
+  
+  const myReports = reports.filter(r => r.userId === currentUser.id);
+  const myLost = myReports.filter(r => r.type === 'lost' && !r.verified).length;}
+  
+  
+  
+  
+  
+  
+  
+  
+  const myReports = reports.filter(r => r.userId === currentUser.id);
+  const myLost = myReports.filter(r => r.type === 'lost' && !r.verified).length;
+  const myFound = myReports.filter(r => r.type === 'found' && !r.verified).length;
+  const myReturned = myReports.filter(r => r.verified).length;
+  
+  document.getElementById('myLostCount').innerText = myLost;
+  document.getElementById('myFoundCount').innerText = myFound;
+  document.getElementById('myReturnedCount').innerText = myReturned;
+
+// Show report type modal
+function showReportTypeModal() {
+  if (!currentUser) {
+    showNotification('Please login first.', 'error');
+    return;
+  }
+  document.getElementById('reportTypeModal').style.display = 'flex';
+}
+
+// Close report type modal
+function closeReportTypeModal() {
+  document.getElementById('reportTypeModal').style.display = 'none';
+}
+
+// Select type from modal
+function selectTypeFromModal(type) {
+  closeReportTypeModal();
+  selectType(type);
+}
+
+// Select report type
+function selectType(type) {
+  if (!currentUser) {
+    showNotification('Please login first.', 'error');
+    return;
+  }
+  
+  reportType = type;
+  const title = type === 'lost' ? 'Report Lost Item' : 'Report Found Item';
+  document.getElementById('formTitle').innerText = title;
+  document.getElementById('reportForm').style.display = 'flex';
+}
+
+// Close form
+function closeForm() {
+  document.getElementById('reportForm').style.display = 'none';
+  resetForm();
+}
+
+// Character counter
+document.addEventListener('DOMContentLoaded', function() {
+  const textarea = document.getElementById('itemDesc');
+  if (textarea) {
+    textarea.addEventListener('input', function() {
+      const count = this.value.length;
+      const counter = document.getElementById('charCount');
+      if (counter) {
+        counter.innerText = `${count}/500`;
+      }
+    });
+  }
+});
+
+// Image preview
+function previewImage() {
+  const file = document.getElementById('itemImage').files[0];
+  const preview = document.getElementById('imagePreview');
+  
+  if (file) {
+    const reader = new FileReader();
+    reader.onload = function(e) {
+      preview.innerHTML = `<img src="${e.target.result}" alt="Preview">`;
+    };
+    reader.readAsDataURL(file);
+  }
+}
+
+// Submit report
+function submitReport() {
+  const name = document.getElementById('itemName').value.trim();
+  const desc = document.getElementById('itemDesc').value.trim();
+  const location = document.getElementById('itemLocation').value.trim();
+  const image = document.getElementById('itemImage').files[0];
+  
+  if (!name) {
+    showNotification('Please enter the item name.', 'error');
+    return;
+  }
+  
+  if (!desc) {
+    showNotification('Please provide a description.', 'error');
+    return;
+  }
+  
+  if (!location) {
+    showNotification('Please specify the location.', 'error');
+    return;
+  }
+  
+  if (!image) {
+    showNotification('Please upload an image.', 'error');
+    return;
+  }
+  
+  if (!reportType) {
+    showNotification('Please select report type (Lost/Found).', 'error');
+    return;
+  }
+  
+  if (image.size > 5 * 1024 * 1024) {
+    showNotification('Image size must be less than 5MB.', 'error');
+    return;
+  }
+  
+  const itemType = classifyItem(name + ' ' + desc);
+  
+  const reader = new FileReader();
+  reader.onload = function(e) {
+    const imageUrl = e.target.result;
+    
+    const report = {
+      id: Date.now(),
+      userId: currentUser.id,
+      user: currentUser.name,
+      email: currentUser.email,
+      type: reportType,
+      itemName: name,
+      description: desc,
+      location: location,
+      image: imageUrl,
+      classifiedAs: itemType,
+      verified: false,
+      timestamp: new Date().toLocaleString(),
+      timestampRaw: Date.now()
+    };
+    
+    reports.unshift(report);
+    saveToStorage();
+    displayReports();
+    displayLostItems();
+    displayFoundItems();
+    displayMatches();
+    updateStatistics();
+    closeForm();
+    showNotification(`Report submitted successfully! Classified as: ${itemType}`, 'success');
+    
+    autoCheckMatches(report);
+  };
+  
+  reader.readAsDataURL(image);
+}
+
+// Enhanced AI Classification
+function classifyItem(text) {
+  text = text.toLowerCase();
+  
+  if (text.match(/\b(id|identification|card|student card|license)\b/)) return 'ID';
+  if (text.match(/\b(phone|mobile|cell|iphone|android|smartphone)\b/)) return 'Phone';
+  if (text.match(/\b(bag|backpack|purse|handbag|tote|suitcase|luggage)\b/)) return 'Bag';
+  if (text.match(/\b(key|keys|keychain)\b/)) return 'Keys';
+  if (text.match(/\b(wallet|purse)\b/)) return 'Wallet';
+  if (text.match(/\b(laptop|computer|tablet|ipad|macbook|chromebook)\b/)) return 'Laptop';
+  if (text.match(/\b(headphone|earbud|airpod|earphone)\b/)) return 'Headphones';
+  if (text.match(/\b(charger|cable|adapter)\b/)) return 'Charger';
+  if (text.match(/\b(book|notebook|textbook|novel)\b/)) return 'Book';
+  if (text.match(/\b(pen|pencil|marker|stationery)\b/)) return 'Stationery';
+  if (text.match(/\b(jacket|coat|shirt|sweater|hoodie|clothing|clothes)\b/)) return 'Clothing';
+  if (text.match(/\b(shoe|shoes|sneaker|boot)\b/)) return 'Shoes';
+  if (text.match(/\b(watch|glasses|sunglasses|spectacles)\b/)) return 'Accessories';
+  if (text.match(/\b(jewelry|ring|necklace|bracelet|earring)\b/)) return 'Jewelry';
+  if (text.match(/\b(bottle|flask|tumbler|container)\b/)) return 'Bottle';
+  if (text.match(/\b(umbrella)\b/)) return 'Umbrella';
+  
+  return 'Unknown';
+}
+
+// Auto-check for matches
+function autoCheckMatches(newReport) {
+  const oppositeType = newReport.type === 'lost' ? 'found' : 'lost';
+  const potentialMatches = reports.filter(r => 
+    r.type === oppositeType && 
+    r.classifiedAs === newReport.classifiedAs && 
+    !r.verified &&
+    r.id !== newReport.id
+  );
+  
+  if (potentialMatches.length > 0) {
+    showNotification(`Found ${potentialMatches.length} potential match(es)! Check the Matches section.`, 'info');
+  }
+}
+
+// Display all reports
+function displayReports() {
+  const container = document.getElementById('reportList');
+  const noReports = document.getElementById('noReports');
+  
+  let filteredReports = getFilteredReports();
+  
+  container.innerHTML = '';
+  
+  if (filteredReports.length === 0) {
+    noReports.style.display = 'block';
+    return;
+  }
+  
+  noReports.style.display = 'none';
+  
+  filteredReports.forEach((report) => {
+    container.appendChild(createReportCard(report));
+  });
+}
+
+// Display lost items
+function displayLostItems() {
+  const container = document.getElementById('lostItemsList');
+  const noItems = document.getElementById('noLostItems');
+  
+  const lostItems = reports.filter(r => r.type === 'lost' && !r.verified);
+  
+  container.innerHTML = '';
+  
+  if (lostItems.length === 0) {
+    noItems.style.display = 'block';
+    return;
+  }
+  
+  noItems.style.display = 'none';
+  
+  lostItems.forEach((report) => {
+    container.appendChild(createReportCard(report));
+  });
+}
+
+// Display found items
+function displayFoundItems() {
+  const container = document.getElementById('foundItemsList');
+  const noItems = document.getElementById('noFoundItems');
+  
+  const foundItems = reports.filter(r => r.type === 'found' && !r.verified);
+  
+  container.innerHTML = '';
+  
+  if (foundItems.length === 0) {
+    noItems.style.display = 'block';
+    return;
+  }
+  
+  noItems.style.display = 'none';
+  
+  foundItems.forEach((report) => {
+    container.appendChild(createReportCard(report));
+  });
+}
+
+// Display matches
+function displayMatches() {
+  const container = document.getElementById('matchesDisplay');
+  const noMatches = document.getElementById('noMatches');
+  
+  const lostItems = reports.filter(r => r.type === 'lost' && !r.verified);
+  const foundItems = reports.filter(r => r.type === 'found' && !r.verified);
+  
+  const matches = [];
+  
+  lostItems.forEach(lost => {
+    foundItems.forEach(found => {
+      if (lost.classifiedAs === found.classifiedAs) {
+        const similarity = calculateSimilarity(lost, found);
+        matches.push({ lost, found, similarity });
+      }
+    });
+  });
+  
+  matches.sort((a, b) => b.similarity - a.similarity);
+  
+  container.innerHTML = '';
+  
+  if (matches.length === 0) {
+    noMatches.style.display = 'block';
+    return;
+  }
+  
+  noMatches.style.display = 'none';
+  
+  matches.forEach((match, index) => {
+    const div = document.createElement('div');
+    div.className = 'match-card';
+    
+    const matchPercentage = Math.round(match.similarity * 100);
+    
+    const verifyButton = currentUser && currentUser.role === 'admin' ? 
+      `<button class="verify-btn" onclick="verifyMatch(${match.lost.id}, ${match.found.id})">
+        ✓ Mark as Returned & Verified
+      </button>` : '';
+    
+    div.innerHTML = `
+      <h4>🎯 Match #${index + 1} - ${matchPercentage}% Similarity</h4>
+      <div class="match-details">
+        <div class="match-item">
+          <strong style="color: #DC2626;">Lost Item</strong>
+          <p><strong>${match.lost.itemName}</strong></p>
+          <img src="${match.lost.image}" alt="${match.lost.itemName}">
+          <p><strong>Description:</strong> ${match.lost.description}</p>
+          <p><strong>Location:</strong> ${match.lost.location}</p>
+          <p><strong>By:</strong> ${match.lost.user}</p>
+          <p><strong>Email:</strong> ${match.lost.email}</p>
+          <p><strong>Date:</strong> ${match.lost.timestamp}</p>
+        </div>
+        <div class="match-item">
+          <strong style="color: #2563EB;">Found Item</strong>
+          <p><strong>${match.found.itemName}</strong></p>
+          <img src="${match.found.image}" alt="${match.found.itemName}">
+          <p><strong>Description:</strong> ${match.found.description}</p>
+          <p><strong>Location:</strong> ${match.found.location}</p>
+          <p><strong>By:</strong> ${match.found.user}</p>
+          <p><strong>Email:</strong> ${match.found.email}</p>
+          <p><strong>Date:</strong> ${match.found.timestamp}</p>
+        </div>
+      </div>
+      ${verifyButton}
+    `;
+    container.appendChild(div);
+  });
+}
+
+// Display returned items
+function displayReturnedItems() {
+  const container = document.getElementById('returnedItemsList');
+  const noItems = document.getElementById('noReturnedItems');
+  
+  const returnedItems = reports.filter(r => r.verified);
+  
+  container.innerHTML = '';
+  
+  if (returnedItems.length === 0) {
+    noItems.style.display = 'block';
+    return;
+  }
+  
+  noItems.style.display = 'none';
+  
+  returnedItems.forEach((report) => {
+    container.appendChild(createReportCard(report));
+  });
+}
+
+// Display my reports
+function displayMyReports() {
+  if (!currentUser) return;
+  
+  const container = document.getElementById('myReportsList');
+  const noReports = document.getElementById('noMyReports');
+  
+  const myReports = reports.filter(r => r.userId === currentUser.id);
+  
+  container.innerHTML = '';
+  
+  if (myReports.length === 0) {
+    noReports.style.display = 'block';
+    return;
+  }
+  
+  noReports.style.display = 'none';
+  
+  myReports.forEach((report) => {
+    container.appendChild(createReportCard(report, true));
+  });
+}
+
+// Create report card
+function createReportCard(report, showDelete = false) {
+  const div = document.createElement('div');
+  div.className = 'reportItem';
+  
+  const statusBadge = report.verified ? 
+    '<span class="badge matched">✓ Matched & Returned</span>' :
+    `<span class="badge ${report.type}">${report.type.toUpperCase()}</span>`;
+  
+  const deleteBtn = (showDelete || (currentUser && currentUser.role === 'admin')) ? 
+    `<button class="delete-btn-small" onclick="deleteReport(${report.id})">✕</button>` : '';
+  
+  div.innerHTML = `
+    ${deleteBtn}
+    ${statusBadge}
+    <strong>${report.itemName}</strong>
+    <div class="category">${report.classifiedAs}</div>
+    <img src="${report.image}" alt="${report.itemName}">
+    <p><strong>Description:</strong> ${report.description}</p>
+    <p><strong>Location:</strong> ${report.location}</p>
+    <div class="meta">
+      <p><strong>Reported by:</strong> ${report.user}</p>
+      <p><strong>Date:</strong> ${report.timestamp}</p>
+    </div>
+  `;
+  
+  return div;
+}
+
+// Filter reports
+function filterReports() {
+  const searchTerm = document.getElementById('searchBox').value.trim();
+  
+  if (searchTerm && !recentSearches.includes(searchTerm)) {
+    recentSearches.unshift(searchTerm);
+    if (recentSearches.length > 10) {
+      recentSearches.pop();
+    }
+    saveToStorage();
+    displayRecentSearches();
+  }
+  
+  displayReports();
+}
+
+// Get filtered reports
+function getFilteredReports() {
+  let filtered = [...reports];
+  
+  const searchTerm = document.getElementById('searchBox').value.toLowerCase();
+  if (searchTerm) {
+    filtered = filtered.filter(r => 
+      r.itemName.toLowerCase().includes(searchTerm) ||
+      r.description.toLowerCase().includes(searchTerm) ||
+      r.location.toLowerCase().includes(searchTerm) ||
+      r.user.toLowerCase().includes(searchTerm) ||
+      r.classifiedAs.toLowerCase().includes(searchTerm)
+    );
+  }
+  
+  const typeFilter = document.getElementById('filterType').value;
+  if (typeFilter !== 'all') {
+    if (typeFilter === 'matched') {
+      filtered = filtered.filter(r => r.verified);
+    } else {
+      filtered = filtered.filter(r => r.type === typeFilter && !r.verified);
+    }
+  }
+  
+  const categoryFilter = document.getElementById('filterCategory').value;
+  if (categoryFilter !== 'all') {
+    filtered = filtered.filter(r => r.classifiedAs === categoryFilter);
+  }
+  
+  return filtered;
+}
+
+// Display recent searches
+function displayRecentSearches() {
+  const section = document.getElementById('recentSearchesSection');
+  const container = document.getElementById('recentSearchesList');
+  
+  if (recentSearches.length === 0) {
+    section.style.display = 'none';
+    return;
+  }
+  
+  section.style.display = 'block';
+  container.innerHTML = '';
+  
+  recentSearches.forEach((search, index) => {
+    const span = document.createElement('span');
+    span.className = 'recent-search-item';
+    span.innerHTML = `${search} <span class="remove" onclick="removeRecentSearch(${index})">✕</span>`;
+    span.onclick = function(e) {
+      if (!e.target.classList.contains('remove')) {
+        document.getElementById('searchBox').value = search;
+        filterReports();
+      }
+    };
+    container.appendChild(span);
+  });
+}
+
+// Remove recent search
+function removeRecentSearch(index) {
+  recentSearches.splice(index, 1);
+  saveToStorage();
+  displayRecentSearches();
+}
+
+// Reset form
+function resetForm() {
+  document.getElementById('itemName').value = '';
+  document.getElementById('itemDesc').value = '';
+  document.getElementById('itemLocation').value = '';
+  document.getElementById('itemImage').value = '';
+  document.getElementById('imagePreview').innerHTML = '';
+  const charCount = document.getElementById('charCount');
+  if (charCount) {
+    charCount.innerText = '0/500';
+  }
+  reportType = '';
+}
+
+// Update statistics
+function updateStatistics() {
+  const lostCount = reports.filter(r => r.type === 'lost' && !r.verified).length;
+  const foundCount = reports.filter(r => r.type === 'found' && !r.verified).length;
+  const matchedCount = reports.filter(r => r.verified).length;
+  
+  document.getElementById('lostCount').innerText = lostCount;
+  document.getElementById('foundCount').innerText = foundCount;
+  document.getElementById('matchedCount').innerText = matchedCount;
+}
+
+// Delete report
+function deleteReport(reportId) {
+  if (confirm('Are you sure you want to delete this report? This action cannot be undone.')) {
+    const index = reports.findIndex(r => r.id === reportId);
+    if (index !== -1) {
+      reports.splice(index, 1);
+      saveToStorage();
+      
+      displayReports();
+      displayLostItems();
+      displayFoundItems();
+      displayMatches();
+      displayReturnedItems();
+      displayMyReports();
+      updateStatistics();
+      
+      showNotification('Report deleted successfully.', 'success');
+    }
+  }
+}
+
+// Admin: Show matches
+function showMatches() {
+  displayMatches();
+  const resultDiv = document.getElementById('matchResults');
+  resultDiv.innerHTML = '<p style="text-align: center; color: var(--primary-blue); padding: 20px;">Check the Matches section in the navigation to see all potential matches!</p>';
+}
+
+// Calculate similarity
+function calculateSimilarity(lost, found) {
+  let score = 0;
+  
+  if (lost.classifiedAs === found.classifiedAs) {
+    score += 0.5;
+  }
+  
+  const lostWords = lost.description.toLowerCase().split(/\s+/);
+  const foundWords = found.description.toLowerCase().split(/\s+/);
+  const commonWords = lostWords.filter(word => 
+    foundWords.includes(word) && word.length > 3
+  );
+  score += Math.min(commonWords.length * 0.05, 0.3);
+  
+  const lostNameWords = lost.itemName.toLowerCase().split(/\s+/);
+  const foundNameWords = found.itemName.toLowerCase().split(/\s+/);
+  const commonNameWords = lostNameWords.filter(word => 
+    foundNameWords.includes(word) && word.length > 2
+  );
+  score += Math.min(commonNameWords.length * 0.1, 0.2);
+  
+  return Math.min(score, 1);
+}
+
+// Verify match
+function verifyMatch(lostId, foundId) {
+  const lostIndex = reports.findIndex(r => r.id === lostId);
+  const foundIndex = reports.findIndex(r => r.id === foundId);
+  
+  if (lostIndex === -1 || foundIndex === -1) {
+    showNotification('Error: Could not find reports.', 'error');
+    return;
+  }
+  
+  if (confirm('Are you sure you want to mark this item as returned? This action will verify the match.')) {
+    reports[lostIndex].verified = true;
+    reports[foundIndex].verified = true;
+    
+    saveToStorage();
+    displayMatches();
+    displayReports();
+    displayLostItems();
+    displayFoundItems();
+    displayReturnedItems();
+    updateStatistics();
+    
+    showNotification('✓ Item successfully verified and marked as returned!', 'success');
+  }
+}
+
+// Admin: View all reports
+function viewAllReports() {
+  showSection('home');
+  showNotification('Viewing all reports in Home section.', 'info');
+}
+
+// Admin: Show delete section
+function showDeleteSection() {
+  const deleteSection = document.getElementById('deleteSection');
+  const container = document.getElementById('deleteReportsList');
+  
+  if (deleteSection.style.display === 'block') {
+    deleteSection.style.display = 'none';
+    return;
+  }
+  
+  deleteSection.style.display = 'block';
+  container.innerHTML = '';
+  
+  reports.forEach((report) => {
+    container.appendChild(createReportCard(report, true));
+  });
+}
+
+// Show notification
+function showNotification(message, type = 'info') {
+  const notification = document.getElementById('notification');
+  notification.innerText = message;
+  notification.className = `toast-notification ${type} show`;
+  
+  setTimeout(() => {
+    notification.className = 'toast-notification';
+  }, 4000);
+}
+
+// Prevent form submission on Enter key
+document.addEventListener('keypress', function(e) {
+  if (e.key === 'Enter' && e.target.tagName !== 'TEXTAREA') {
+    e.preventDefault();
+  }
+});
